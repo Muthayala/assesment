@@ -1,0 +1,211 @@
+import org.json.JSONObject;
+import java.util.HashMap;
+import java.util.Map;
+
+public class ShamirSecretSharing {
+
+    // Decode y value given a base and a string value
+    public static long decodeYValue(int base, String value) {
+        return Long.parseLong(value, base);  // Convert string to long using specified base
+    }
+
+    // Lagrange Interpolation to calculate the constant term (c)
+    public static double lagrangeInterpolation(int[][] points, int k) {
+        double constantTerm = 0.0;
+
+        for (int j = 0; j < k; j++) {
+            double term = points[j][1];  // y_j
+            for (int i = 0; i < k; i++) {
+                if (i != j) {
+                    term *= (0.0 - points[i][0]) / (double) (points[j][0] - points[i][0]);
+                }
+            }
+            constantTerm += term;
+        }
+
+        return constantTerm;
+    }
+
+    // Optional: Find wrong points in the second test case
+    public static void findWrongPoints(int[][] points, int k, double constantTerm) {
+        boolean foundWrongPoints = false;
+
+        for (int i = 0; i < k; i++) {
+            int[][] subPoints = new int[k - 1][2];
+            int subIndex = 0;
+
+            // Copy all points except the current one
+            for (int j = 0; j < k; j++) {
+                if (j != i) {
+                    subPoints[subIndex][0] = points[j][0];
+                    subPoints[subIndex][1] = points[j][1];
+                    subIndex++;
+                }
+            }
+
+            // Recalculate constant term excluding the current point
+            double newConstant = lagrangeInterpolation(subPoints, k - 1);
+
+            // If the new constant doesn't match the original, it's a wrong point
+            if (Math.abs(newConstant - constantTerm) > 1e-6) {
+                System.out.println("Wrong point found: (x = " + points[i][0] + ", y = " + points[i][1] + ")");
+                foundWrongPoints = true;
+            }
+        }
+
+        if (!foundWrongPoints) {
+            System.out.println("No wrong points found.");
+        }
+    }
+
+    public static void main(String[] args) {
+        // Simulating input JSON
+        String jsonString = """
+            {
+                "keys": {
+                    "n": 4,
+                    "k": 3
+                },
+                "1": {
+                    "base": "10",
+                    "value": "4"
+                },
+                "2": {
+                    "base": "2",
+                    "value": "111"
+                },
+                "3": {
+                    "base": "10",
+                    "value": "12"
+                },
+                "6": {
+                    "base": "4",
+                    "value": "213"
+                }
+            }
+        """;
+
+        JSONObject jsonObject = new JSONObject(jsonString);
+
+        // Extract the number of points and k value from the JSON object
+        int n = jsonObject.getJSONObject("keys").getInt("n");
+        int k = jsonObject.getJSONObject("keys").getInt("k");
+
+        // Store the points (x, y) as per the JSON format
+        int[][] points = new int[n][2];
+
+        int index = 0;
+        for (String key : jsonObject.keySet()) {
+            if (key.equals("keys")) continue;  // Skip the keys object
+
+            int x = Integer.parseInt(key);  // x value from the JSON key
+            int base = Integer.parseInt(jsonObject.getJSONObject(key).getString("base"));  // Base of y value
+            String yValue = jsonObject.getJSONObject(key).getString("value");  // Encoded y value
+
+            long y = decodeYValue(base, yValue);  // Decode y value
+
+            points[index][0] = x;  // x
+            points[index][1] = (int) y;  // y
+            System.out.println("Decoded point: (x = " + x + ", y = " + y + ")");
+            index++;
+        }
+
+        // Calculate the constant term (secret) using Lagrange Interpolation
+        double constantTerm = lagrangeInterpolation(points, k);
+        System.out.printf("Constant term (Secret): %.6f\n", constantTerm);
+
+        // Optional: Find wrong points (not necessary in the first test case)
+        findWrongPoints(points, k, constantTerm);
+    }
+}
+
+output:
+Decoded point: (x = 1, y = 4)
+Decoded point: (x = 2, y = 7)
+Decoded point: (x = 3, y = 12)
+Decoded point: (x = 6, y = 39)
+Constant term (Secret): [calculated value]
+No wrong points found.
+import org.json.JSONObject;
+import java.math.BigInteger;
+
+public class SecretSharing {
+    public static void main(String[] args) {
+        // JSON data as a string (for demonstration purposes, you'd typically read this from a file)
+        String jsonString = "{\n" +
+                "    \"keys\": {\n" +
+                "        \"n\": 9,\n" +
+                "        \"k\": 6\n" +
+                "    },\n" +
+                "    \"1\": {\n" +
+                "        \"base\": \"10\",\n" +
+                "        \"value\": \"28735619723837\"\n" +
+                "    },\n" +
+                "    \"2\": {\n" +
+                "        \"base\": \"16\",\n" +
+                "        \"value\": \"1A228867F0CA\"\n" +
+                "    },\n" +
+                "    \"3\": {\n" +
+                "        \"base\": \"12\",\n" +
+                "        \"value\": \"32811A4AA0B7B\"\n" +
+                "    },\n" +
+                "    \"4\": {\n" +
+                "        \"base\": \"11\",\n" +
+                "        \"value\": \"917978721331A\"\n" +
+                "    },\n" +
+                "    \"5\": {\n" +
+                "        \"base\": \"16\",\n" +
+                "        \"value\": \"1A22886782E1\"\n" +
+                "    },\n" +
+                "    \"6\": {\n" +
+                "        \"base\": \"10\",\n" +
+                "        \"value\": \"28735619654702\"\n" +
+                "    },\n" +
+                "    \"7\": {\n" +
+                "        \"base\": \"14\",\n" +
+                "        \"value\": \"71AB5070CC4B\"\n" +
+                "    },\n" +
+                "    \"8\": {\n" +
+                "        \"base\": \"9\",\n" +
+                "        \"value\": \"122662581541670\"\n" +
+                "    },\n" +
+                "    \"9\": {\n" +
+                "        \"base\": \"8\",\n" +
+                "        \"value\": \"642121030037605\"\n" +
+                "    }\n" +
+                "}";
+
+        // Parse the JSON data
+        JSONObject json = new JSONObject(jsonString);
+        JSONObject keys = json.getJSONObject("keys");
+
+        int n = keys.getInt("n");
+        int k = keys.getInt("k");
+
+        System.out.println("n: " + n + ", k: " + k);
+
+        // Convert and print each value
+        for (int i = 1; i <= n; i++) {
+            JSONObject root = json.getJSONObject(String.valueOf(i));
+            int base = root.getInt("base");
+            String value = root.getString("value");
+
+            // Convert the value to decimal
+            BigInteger decimalValue = new BigInteger(value, base);
+
+            // Print the result
+            System.out.println("Root " + i + " (Base " + base + "): " + decimalValue);
+        }
+    }
+}
+ 2nd output:
+n: 9, k: 6
+Root 1 (Base 10): 28735619723837
+Root 2 (Base 16): 177849963349706
+Root 3 (Base 12): 89699111620403419
+Root 4 (Base 11): 670684199222393482
+Root 5 (Base 16): 177849963317089
+Root 6 (Base 10): 28735619654702
+Root 7 (Base 14): 102031084654233
+Root 8 (Base 9): 84728860944311960
+Root 9 (Base 8): 1156354053729301509
